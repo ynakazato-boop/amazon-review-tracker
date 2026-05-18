@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import getDb from '@/lib/db';
+import { supabase } from '@/lib/supabase';
 
 export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const db = getDb();
-  db.prepare('DELETE FROM asins WHERE id = ?').run(id);
+  const { error } = await supabase.from('asins').delete().eq('id', id);
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
 }
 
@@ -17,20 +17,25 @@ export async function PATCH(
 ) {
   const { id } = await params;
   const body = await req.json();
-  const db = getDb();
-  const row = db.prepare('SELECT * FROM asins WHERE id = ?').get(id) as {
-    note: string | null; frequency: string; track_reviews: number; track_purchase_count: number;
-  } | undefined;
-  if (!row) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  db.prepare(
-    'UPDATE asins SET note = ?, frequency = ?, track_reviews = ?, track_purchase_count = ? WHERE id = ?'
-  ).run(
-    'note' in body ? (body.note?.trim() || null) : row.note,
-    'frequency' in body ? (body.frequency || 'daily') : row.frequency,
-    'track_reviews' in body ? (body.track_reviews ? 1 : 0) : row.track_reviews,
-    'track_purchase_count' in body ? (body.track_purchase_count ? 1 : 0) : row.track_purchase_count,
-    id
-  );
+  const { data: row, error: fetchError } = await supabase
+    .from('asins')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (fetchError || !row) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
+  const { error } = await supabase
+    .from('asins')
+    .update({
+      note: 'note' in body ? (body.note?.trim() || null) : row.note,
+      frequency: 'frequency' in body ? (body.frequency || 'daily') : row.frequency,
+      track_reviews: 'track_reviews' in body ? (body.track_reviews ? 1 : 0) : row.track_reviews,
+      track_purchase_count: 'track_purchase_count' in body ? (body.track_purchase_count ? 1 : 0) : row.track_purchase_count,
+    })
+    .eq('id', id);
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
 }

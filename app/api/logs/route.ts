@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import getDb from '@/lib/db';
+import { supabase } from '@/lib/supabase';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const limit = parseInt(searchParams.get('limit') || '50', 10);
 
-  const db = getDb();
-  const rows = db
-    .prepare('SELECT * FROM execution_logs ORDER BY id DESC LIMIT ?')
-    .all(limit);
+  const { data, error } = await supabase
+    .from('execution_logs')
+    .select('*')
+    .order('id', { ascending: false })
+    .limit(limit);
 
-  return NextResponse.json(rows);
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json(data);
 }

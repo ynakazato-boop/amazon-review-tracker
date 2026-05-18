@@ -1,43 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server';
-import getDb from '@/lib/db';
+import { supabase } from '@/lib/supabase';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const asinId    = searchParams.get('asinId');
+  const asinId = searchParams.get('asinId');
   const startDate = searchParams.get('startDate');
-  const endDate   = searchParams.get('endDate');
+  const endDate = searchParams.get('endDate');
 
-  const db = getDb();
+  let query = supabase
+    .from('review_snapshots')
+    .select('rating, review_count, purchase_count_label, measured_at, asins!inner(asin, note)')
+    .order('measured_at', { ascending: true });
 
-  let query = `
-    SELECT a.asin, a.note, s.rating, s.review_count, s.purchase_count_label, s.measured_at
-    FROM review_snapshots s
-    JOIN asins a ON a.id = s.asin_id
-    WHERE 1=1
-  `;
-  const params: (string | number)[] = [];
+  if (asinId) query = query.eq('asin_id', asinId) as typeof query;
+  if (startDate) query = query.gte('measured_at', startDate) as typeof query;
+  if (endDate) query = query.lte('measured_at', endDate + 'T23:59:59') as typeof query;
 
-  if (asinId)    { query += ' AND s.asin_id = ?'; params.push(asinId); }
-  if (startDate) { query += ' AND s.measured_at >= ?'; params.push(startDate); }
-  if (endDate)   { query += ' AND s.measured_at <= ?'; params.push(endDate + ' 23:59:59'); }
-  query += ' ORDER BY a.asin, s.measured_at ASC';
-
-  const rows = db.prepare(query).all(...params) as {
-    asin: string; note: string | null; rating: number | null;
-    review_count: number | null; purchase_count_label: string | null; measured_at: string;
-  }[];
+  const { data, error } = await query;
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   const header = 'ASIN,備考,星評価,レビュー件数,購入件数ラベル,計測日時\n';
-  const body = rows.map(r =>
-    [
-      r.asin,
-      r.note ?? '',
-      r.rating ?? '',
-      r.review_count ?? '',
-      r.purchase_count_label ?? '',
-      r.measured_at,
-    ].join(',')
-  ).join('\n');
+  const body = (data || []).map((r: any) => [
+    r.asins.asin,
+    r.asins.note ?? '',
+    r.rating ?? '',
+    r.review_count ?? '',
+    r.purchase_count_label ?? '',
+    r.measured_at,
+  ].join(',')).join('\n');
 
   return new NextResponse(header + body, {
     headers: {
