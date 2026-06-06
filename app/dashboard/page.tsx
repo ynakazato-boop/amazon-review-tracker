@@ -69,15 +69,14 @@ function TrackBadges({ trackReviews, trackPurchase }: { trackReviews: boolean; t
   );
 }
 
+function toJSTDate(d: Date): string {
+  return d.toLocaleDateString('sv', { timeZone: 'Asia/Tokyo' });
+}
+
 function isToday(s: string | null): boolean {
   if (!s) return false;
   const d = parseDbDate(s);
-  const now = new Date();
-  return (
-    d.getUTCFullYear() === now.getUTCFullYear() &&
-    d.getUTCMonth() === now.getUTCMonth() &&
-    d.getUTCDate() === now.getUTCDate()
-  );
+  return toJSTDate(d) === toJSTDate(new Date());
 }
 
 export default function DashboardPage() {

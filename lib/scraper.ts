@@ -45,14 +45,22 @@ async function fetchPage(asin: string, opts: Required<ScrapeOptions>): Promise<S
       'sec-fetch-mode': 'navigate',
       'sec-fetch-site': 'same-origin',
     },
-    timeout: 20000,
+    timeout: 12000,
   });
 
   const $ = cheerio.load(data);
 
-  // CAPTCHAインタースティシャルページの場合は即時エラー
-  if ($('form[action*="validateCaptcha"]').length > 0) {
-    throw new Error(`CAPTCHA検知: ASIN ${asin}`);
+  // ブロックページ検知（CAPTCHA・ロボットチェック・ログイン要求など）
+  const pageTitle = $('title').text().toLowerCase();
+  if (
+    $('form[action*="validateCaptcha"]').length > 0 ||
+    pageTitle.includes('robot check') ||
+    pageTitle.includes('robots') ||
+    pageTitle.includes('sorry') ||
+    $('body').text().includes('Enter the characters you see below') ||
+    $('body').text().includes('ロボットによるアクセスと判断')
+  ) {
+    throw new Error(`ブロック検知: ASIN ${asin}`);
   }
 
   let rating: number | null = null;
@@ -133,13 +141,13 @@ export async function scrapeReviews(
   const reviewsMissing = trackReviews && result.rating === null && result.reviewCount === null;
   if (!reviewsMissing) return result;
 
-  // 1回目リトライ: 8〜12秒待機
-  await sleep(8000 + Math.random() * 4000);
+  // 1回目リトライ: 3〜5秒待機
+  await sleep(3000 + Math.random() * 2000);
   const retry1 = await fetchPage(asin, fullOpts);
   if (!(trackReviews && retry1.rating === null && retry1.reviewCount === null)) return retry1;
 
-  // 2回目リトライ: さらに15〜20秒待機
-  await sleep(15000 + Math.random() * 5000);
+  // 2回目リトライ: さらに5〜8秒待機
+  await sleep(5000 + Math.random() * 3000);
   const retry2 = await fetchPage(asin, fullOpts);
   if (!(trackReviews && retry2.rating === null && retry2.reviewCount === null)) return retry2;
 

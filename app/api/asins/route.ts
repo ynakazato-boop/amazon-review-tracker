@@ -17,17 +17,24 @@ export async function GET() {
         .select('rating, review_count, purchase_count_label, measured_at')
         .eq('asin_id', asin.id)
         .order('id', { ascending: false })
-        .limit(2);
+        .limit(20);
+
+      // 最終計測日時はエラーを含む最新スナップショットから取得
+      const latest = snapshots?.[0] ?? null;
+      // レビュー値の表示・差分はデータのあるスナップショットのみ使用
+      const withReviews = (snapshots ?? []).filter(s => s.review_count !== null);
+      const latestReview = withReviews[0] ?? null;
+      const prevReview = withReviews[1] ?? null;
 
       return {
         ...asin,
-        latest_rating: snapshots?.[0]?.rating ?? null,
-        latest_count: snapshots?.[0]?.review_count ?? null,
-        latest_purchase_count_label: snapshots?.[0]?.purchase_count_label ?? null,
-        latest_measured_at: snapshots?.[0]?.measured_at ?? null,
-        prev_rating: snapshots?.[1]?.rating ?? null,
-        prev_count: snapshots?.[1]?.review_count ?? null,
-        prev_purchase_count_label: snapshots?.[1]?.purchase_count_label ?? null,
+        latest_rating: latestReview?.rating ?? null,
+        latest_count: latestReview?.review_count ?? null,
+        latest_purchase_count_label: latest?.purchase_count_label ?? null,
+        latest_measured_at: latest?.measured_at ?? null,
+        prev_rating: prevReview?.rating ?? null,
+        prev_count: prevReview?.review_count ?? null,
+        prev_purchase_count_label: prevReview?.purchase_count_label ?? null,
       };
     })
   );

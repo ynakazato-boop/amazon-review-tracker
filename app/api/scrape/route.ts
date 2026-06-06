@@ -3,6 +3,8 @@ import { runScheduledScrape } from '@/lib/scheduler';
 import { supabase } from '@/lib/supabase';
 import { scrapeReviews } from '@/lib/scraper';
 
+export const maxDuration = 60;
+
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
   const asinId: number | undefined = body.asinId;
