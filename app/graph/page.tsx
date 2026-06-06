@@ -50,11 +50,14 @@ export default function GraphPage() {
   const trackReviews = Boolean(selectedAsin?.track_reviews);
   const trackPurchase = Boolean(selectedAsin?.track_purchase_count);
 
-  const chartData = data.map(d => ({
-    date: new Date(d.measured_at).toLocaleDateString('ja-JP', { month: '2-digit', day: '2-digit' }),
-    rating: d.rating,
-    count: d.review_count,
-  }));
+  // エラースナップショット（review_count=null）を除外してグラフの途切れを防ぐ
+  const chartData = data
+    .filter(d => d.review_count !== null)
+    .map(d => ({
+      date: new Date(d.measured_at).toLocaleDateString('ja-JP', { month: '2-digit', day: '2-digit' }),
+      rating: d.rating,
+      count: d.review_count,
+    }));
 
   // 購入件数タイムライン（テキスト値なのでテーブル表示）
   const purchaseTimeline = data
