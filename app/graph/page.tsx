@@ -185,8 +185,11 @@ export default function GraphPage() {
           {trackPurchase && (
             <div className="bg-gray-800 border border-gray-700 rounded-xl p-5">
               <h2 className="text-sm font-semibold text-white mb-4">購入件数（過去1か月）タイムライン</h2>
+              <p className="text-gray-500 text-xs mb-4">
+                ※ 購入件数はAmazonが表示するテキストをそのまま記録しています。日付が飛んでいる期間は計測エラーではなく、Amazonがその商品ページに購入件数を表示していなかったことを意味します（購入数が一定以下になると非表示になる仕様）。
+              </p>
               {purchaseTimeline.length === 0 ? (
-                <p className="text-gray-500 text-sm">購入件数データがありません（Amazonが表示していない期間）</p>
+                <p className="text-gray-500 text-sm">この期間はAmazonが購入件数を表示していませんでした</p>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
