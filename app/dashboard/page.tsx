@@ -42,7 +42,7 @@ function Stars({ v }: { v: number | null }) {
 function PurchaseLabel({ label, tracked }: { label: string | null; tracked: boolean }) {
   if (!tracked) return <span className="text-gray-600 text-xs">OFF</span>;
   if (label === 'error') return <span className="text-red-400 text-xs">取得失敗</span>;
-  if (label === null) return <span className="text-gray-500 text-xs">なし</span>;
+  if (label === null) return <span className="text-gray-500 text-xs" title="Amazonがこの商品ページに購入件数を表示していません">Amazon非表示中</span>;
   // テキストが長い場合は省略
   const short = label.length > 20 ? label.slice(0, 20) + '…' : label;
   return <span className="text-green-300 text-xs" title={label}>{short}</span>;
